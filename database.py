@@ -14,7 +14,8 @@ root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
 sys.path.append(root_dir)
 
 def save_and_upload_results(results, query):
-    filename = f"{query}.json"
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{query}-{current_time}.json"
     file_path = os.path.join(OUTPUT_PATH, filename)
     
     try:
@@ -45,25 +46,25 @@ class DataSaver:
         try:
             if len(datalist) > 0:
                 Communicator.show_message("Saving the scraped data")
-                dataFrame = pd.DataFrame(datalist)
-                totalRecords = dataFrame.shape[0]
-                filename = f"{query}.json"
-                joinedPath = os.path.join(OUTPUT_PATH, filename)
-                Communicator.show_message(f"Saving data to path: {joinedPath}")
+                totalRecords = len(datalist)
+                current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                filename = f"{query}-{current_time}.json"
+                file_path = os.path.join(OUTPUT_PATH, filename)
+                Communicator.show_message(f"Saving data to path: {file_path}")
 
-                if os.path.exists(joinedPath):
-                    with open(joinedPath, 'r') as file:
+                if os.path.exists(file_path):
+                    with open(file_path, 'r') as file:
                         existing_data = json.load(file)
                 else:
                     existing_data = []
 
                 existing_data.extend(datalist)
 
-                with open(joinedPath, 'w') as file:
+                with open(file_path, 'w') as file:
                     json.dump(existing_data, file, indent=4)
                 
                 Communicator.show_message(f"Successfully saved, total records saved: {totalRecords}.")
-                return joinedPath
+                return file_path
             else:
                 Communicator.show_error_message("Could not scrape the data because you did not scrape any record.", {ERROR_CODES['NO_RECORD_TO_SAVE']})
                 return None

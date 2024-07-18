@@ -16,7 +16,7 @@ To get started with the scraper, follow these steps:
 1. Clone the repo:
 
    ```shell
-   git clone https://github.com/CSG1000/scraper.git
+   git clone https://github.com/SUPREME-LEADER-CLAUDE/scraper.git
    ```
 
 2. Install the required dependencies by running the following command:

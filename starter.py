@@ -4,10 +4,10 @@ import numpy as np
 from multiprocessing import Pool, current_process
 from scraper.frontend import Frontend
 from scraper.scraper import Backend
-import random
-from scraper.database import save_and_upload_results, DataSaver
+from scraper.database import DataSaver
 import signal
 import sys
+import json
 import logging
 
 # Setup logging
@@ -18,6 +18,7 @@ processes = []
 all_results = []
 search_query = ""
 data_saver = DataSaver()
+progress_file = "progress.json"
 
 def get_city_data(city_name):
     locations_file_path = os.path.join(os.path.dirname(__file__), 'scraper', 'locations.txt')
@@ -28,11 +29,25 @@ def get_city_data(city_name):
                 return {'population': int(population), 'lat': float(lat), 'long': float(long)}
     return {'population': 0, 'lat': None, 'long': None}
 
-def read_locations_from_file(filename, num_locations=3):
+def read_locations_from_file(filename):
     with open(filename, 'r') as file:
         locations = [line.strip().split(',') for line in file.readlines()]
-    sampled_locations = random.sample(locations, num_locations)
-    return [loc[0] for loc in sampled_locations]
+    return [loc[0] for loc in locations]
+
+def read_industries_from_file(filename):
+    with open(filename, 'r') as file:
+        industries = [line.strip() for line in file.readlines()]
+    return industries
+
+def read_progress():
+    if os.path.exists(progress_file):
+        with open(progress_file, 'r') as file:
+            return json.load(file)
+    return {}
+
+def write_progress(progress):
+    with open(progress_file, 'w') as file:
+        json.dump(progress, file, indent=4)
 
 def determine_num_divisions(population):
     if population <= 100000:
@@ -66,6 +81,7 @@ def scrape_subregion(args):
     processes.append(current_process())
     result = backend.mainscraping()
     all_results.extend(result)
+    backend.cleanup()  # Ensure the driver is closed after scraping
     return result
 
 def signal_handler(sig, frame):
@@ -91,80 +107,101 @@ def main():
                         It can be: 
                         start: To start the scraper with GUI
                         headless: To start the scraper in headless mode (CLI)""")
-    parser.add_argument("--search_query", type=str, help="Search query for Google Maps", required=False)
-    parser.add_argument("--locations", type=str, nargs='+', help="List of locations to search in", required=False)
     parser.add_argument("--locations_file", type=str, help="File with list of locations", required=False)
-    parser.add_argument("--num_locations", type=int, default=3, help="Number of random locations to select from the file", required=False)
+    parser.add_argument("--industries_file", type=str, help="File with list of industries", required=False)
+    parser.add_argument("--num_locations", type=int, default=1, help="Number of locations to select from the file", required=False)
     parser.add_argument("--headless_mode", type=int, choices=[0, 1], default=1, help="Headless mode (1 for true, 0 for false)")
 
     args = parser.parse_args()
-
-    search_query = args.search_query
 
     if args.value == "start":
         app = Frontend()
         app.root.protocol("WM_DELETE_WINDOW", app.closingbrowser)
         app.root.mainloop()
     elif args.value == "headless":
-        if not args.search_query:
-            logging.error("Error: --search_query is required for headless mode")
+        if not args.locations_file or not args.industries_file:
+            logging.error("Error: --locations_file and --industries_file are required for headless mode")
             return
 
-        if not args.locations and not args.locations_file:
-            logging.error("Error: Either --locations or --locations_file must be provided")
-            return
+        locations_file_path = os.path.join(os.path.dirname(__file__), 'scraper', args.locations_file)
+        industries_file_path = os.path.join(os.path.dirname(__file__), 'scraper', args.industries_file)
+        
+        locations = read_locations_from_file(locations_file_path)
+        industries = read_industries_from_file(industries_file_path)
+        progress = read_progress()
 
-        locations = args.locations
-        if args.locations_file:
-            locations_file_path = os.path.join(os.path.dirname(__file__), 'scraper', args.locations_file)
-            locations = read_locations_from_file(locations_file_path, args.num_locations)
+        total_locations = len(locations)
 
-        for location in locations:
-            logging.info(f"Processing location: {location}")
-            city_data = get_city_data(location)
-            population = city_data['population']
-            lat_center = city_data['lat']
-            long_center = city_data['long']
-            logging.info(f"Population of {location}: {population}, lat: {lat_center}, long: {long_center}")
-            
-            if population == 0:
-                logging.warning(f"Warning: Population data for {location} not found.")
+        for industry in industries:
+            logging.info(f"Processing industry: {industry}")
+            search_query = industry
+
+            if industry not in progress:
+                progress[industry] = []
+
+            # Check if the industry is completed
+            if len(progress[industry]) >= total_locations:
+                logging.info(f"Skipping completed industry: {industry}")
                 continue
 
-            num_divisions = determine_num_divisions(population)
-            logging.info(f"Number of divisions for {location}: {num_divisions}")
+            for location in locations:
+                if location in progress[industry]:
+                    logging.info(f"Skipping already completed location: {location} for industry: {industry}")
+                    continue
 
-            if num_divisions > 1:
-                if not lat_center or not long_center:
-                    logging.error(f"Error: Coordinates for {location} not found.")
-                    return
+                logging.info(f"Processing location: {location} for industry: {industry}")
+                city_data = get_city_data(location)
+                population = city_data['population']
+                lat_center = city_data['lat']
+                long_center = city_data['long']
+                logging.info(f"Population of {location}: {population}, lat: {lat_center}, long: {long_center}")
                 
-                subregions = generate_pie_subregions(lat_center, long_center, num_divisions)
-                tasks = [(args.search_query, args.headless_mode, lat_center, long_center, start_angle, end_angle) for lat_center, long_center, start_angle, end_angle in subregions]
-                
-                try:
-                    with Pool(processes=os.cpu_count()) as pool:
-                        results = pool.map(scrape_subregion, tasks)
+                if population == 0:
+                    logging.warning(f"Warning: Population data for {location} not found.")
+                    continue
+
+                num_divisions = determine_num_divisions(population)
+                logging.info(f"Number of divisions for {location}: {num_divisions}")
+
+                if num_divisions > 1:
+                    if not lat_center or not long_center:
+                        logging.error(f"Error: Coordinates for {location} not found.")
+                        return
+                    
+                    subregions = generate_pie_subregions(lat_center, long_center, num_divisions)
+                    tasks = [(search_query, args.headless_mode, lat_center, long_center, start_angle, end_angle) for lat_center, long_center, start_angle, end_angle in subregions]
+                    
+                    try:
+                        with Pool(processes=os.cpu_count()) as pool:
+                            results = pool.map(scrape_subregion, tasks)
+                            all_results.extend(results)
+                    except Exception as e:
+                        logging.error(f"Error during multiprocessing: {e}")
+                        results = []
+                        for task in tasks:
+                            results.append(scrape_subregion(task))
                         all_results.extend(results)
-                except Exception as e:
-                    logging.error(f"Error during multiprocessing: {e}")
-                    results = []
-                    for task in tasks:
-                        results.append(scrape_subregion(task))
+                else:
+                    backend = Backend(
+                        searchquery=search_query,
+                        outputformat='json',
+                        headlessmode=args.headless_mode,
+                        location=location
+                    )
+                    results = backend.mainscraping()
+                    logging.info(f"Results for {location}: {results}")
                     all_results.extend(results)
-            else:
-                backend = Backend(
-                    searchquery=args.search_query,
-                    outputformat='json',
-                    headlessmode=args.headless_mode,
-                    location=location
-                )
-                results = backend.mainscraping()
-                logging.info(f"Results for {location}: {results}")
-                all_results.extend(results)
 
-        logging.info(f"All results collected: {all_results}")
-        save_and_upload_results(all_results, args.search_query)
+                # Save results for the current location
+                data_saver.save(results, industry)
+
+                # Update progress
+                progress[industry].append(location)
+                write_progress(progress)
+
+            logging.info(f"All results collected for industry '{industry}': {all_results}")
+            all_results = []  # Reset for next industry
+
     else:
         logging.error("Invalid argument. Use 'start' to start the GUI or 'headless' for headless execution.")
 

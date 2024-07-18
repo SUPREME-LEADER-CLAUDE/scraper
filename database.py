@@ -4,9 +4,9 @@ import os
 import sys
 import pandas as pd
 from datetime import datetime
-from .communicator import Communicator
-from .settings import OUTPUT_PATH
-from .error_codes import ERROR_CODES
+from communicator import Communicator
+from settings import OUTPUT_PATH
+from error_codes import ERROR_CODES
 import json
 
 # Add the root directory to the system path

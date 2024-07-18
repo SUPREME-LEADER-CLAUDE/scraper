@@ -7,14 +7,14 @@ that will handle the scraping process
 
 from time import sleep
 from selenium.webdriver.common.by import By
-from .base import Base
-from .scroller import Scroller
+from base import Base
+from scroller import Scroller
 import tempfile
 import undetected_chromedriver as uc
-from .settings import DRIVER_EXECUTABLE_PATH
-from .communicator import Communicator
-from .database import DataSaver
-from .parser import Parser  # Import the Parser class
+from settings import DRIVER_EXECUTABLE_PATH
+from communicator import Communicator
+from database import DataSaver
+from parser import Parser  # Import the Parser class
 import signal
 import sys
 import logging

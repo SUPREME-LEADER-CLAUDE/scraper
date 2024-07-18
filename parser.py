@@ -1,9 +1,9 @@
 from bs4 import BeautifulSoup
-from .error_codes import ERROR_CODES
-from .communicator import Communicator
-from .database import DataSaver
-from .base import Base
-from .common import Common
+from error_codes import ERROR_CODES
+from communicator import Communicator
+from database import DataSaver
+from base import Base
+from common import Common
 
 class Parser(Base):
     def __init__(self, driver, searchquery) -> None:

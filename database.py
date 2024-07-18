@@ -1,17 +1,13 @@
-# database.py
-
 import os
 import sys
 import pandas as pd
 from datetime import datetime
 from communicator import Communicator
-from settings import OUTPUT_PATH
 from error_codes import ERROR_CODES
 import json
 
-# Add the root directory to the system path
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-sys.path.append(root_dir)
+# Set the output path to the current directory
+OUTPUT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def save_and_upload_results(results, query):
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

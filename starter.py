@@ -20,7 +20,7 @@ data_saver = DataSaver()
 progress_file = "progress.json"
 
 def get_city_data(city_name):
-    locations_file_path = os.path.join(os.path.dirname(__file__), 'scraper', 'locations.txt')
+    locations_file_path = 'locations.txt'
     with open(locations_file_path, 'r') as file:
         for line in file:
             if line.startswith(city_name):
@@ -104,7 +104,6 @@ def main():
 
     parser.add_argument("value", type=str, help="""Arguments being passed to script.
                         It can be: 
-                        start: To start the scraper with GUI
                         headless: To start the scraper in headless mode (CLI)""")
     parser.add_argument("--locations_file", type=str, help="File with list of locations", required=False)
     parser.add_argument("--industries_file", type=str, help="File with list of industries", required=False)
@@ -118,8 +117,8 @@ def main():
             logging.error("Error: --locations_file and --industries_file are required for headless mode")
             return
 
-        locations_file_path = os.path.join(os.path.dirname(__file__), 'scraper', args.locations_file)
-        industries_file_path = os.path.join(os.path.dirname(__file__), 'scraper', args.industries_file)
+        locations_file_path = args.locations_file
+        industries_file_path = args.industries_file
         
         locations = read_locations_from_file(locations_file_path)
         industries = read_industries_from_file(industries_file_path)

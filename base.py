@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as Ec
 from selenium.common.exceptions import (
     WebDriverException
 )
-from .common import Common
+from common import Common
 
 
 class Base:

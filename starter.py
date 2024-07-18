@@ -2,9 +2,9 @@ import argparse
 import os
 import numpy as np
 from multiprocessing import Pool, current_process
-from scraper.frontend import Frontend
-from scraper.scraper import Backend
-from scraper.database import DataSaver
+from frontend import Frontend
+from scraper import Backend
+from database import DataSaver
 import signal
 import sys
 import json

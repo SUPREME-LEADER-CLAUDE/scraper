@@ -2,7 +2,6 @@ import argparse
 import os
 import numpy as np
 from multiprocessing import Pool, current_process
-from frontend import Frontend
 from scraper import Backend
 from database import DataSaver
 import signal
@@ -114,11 +113,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.value == "start":
-        app = Frontend()
-        app.root.protocol("WM_DELETE_WINDOW", app.closingbrowser)
-        app.root.mainloop()
-    elif args.value == "headless":
+    if args.value == "headless":
         if not args.locations_file or not args.industries_file:
             logging.error("Error: --locations_file and --industries_file are required for headless mode")
             return
@@ -203,7 +198,7 @@ def main():
             all_results = []  # Reset for next industry
 
     else:
-        logging.error("Invalid argument. Use 'start' to start the GUI or 'headless' for headless execution.")
+        logging.error("Invalid argument. Use 'headless' for headless execution.")
 
 if __name__ == "__main__":
     main()

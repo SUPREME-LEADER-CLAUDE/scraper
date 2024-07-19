@@ -101,20 +101,3 @@ class Parser(Base):
             Communicator.show_message(f"Final data collected: {self.finalData}")
             self.data_saver.save(datalist=self.finalData, query=self.searchquery)  # Pass searchquery to save
 
-    def main(self, allResultsLinks):
-        Communicator.show_message("Scrolling is done. Now going to scrape each location")
-        try:
-            for resultLink in allResultsLinks:
-                if Common.close_thread_is_set():
-                    self.driver.quit()
-                    return
-
-                self.openingurl(url=resultLink)
-                self.parse()
-
-        except Exception as e:
-            Communicator.show_message(f"Error occurred while parsing the locations. Error: {str(e)}")
-        finally:
-            self.init_data_saver()
-            Communicator.show_message(f"Final data collected: {self.finalData}")
-            self.data_saver.save(datalist=self.finalData, query=self.searchquery)

@@ -19,7 +19,7 @@ import sys
 import logging
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(asctime)s - %(asctime)s - %(asctime)s')
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -58,7 +58,7 @@ class Backend(Base):
 
         Communicator.show_message("Opening browser...")
 
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        self.driver = webdriver.Chrome(ChromeDriverManager(version="114.0.5735.90").install(), options=options)
 
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)

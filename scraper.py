@@ -1,11 +1,17 @@
+# scraper.py
+
+"""
+This module contains the code for the backend,
+that will handle the scraping process
+"""
+
 from time import sleep
 from selenium.webdriver.common.by import By
 from base import Base
 from scroller import Scroller
-import tempfile
-import undetected_chromedriver as uc
 from settings import DRIVER_EXECUTABLE_PATH
 from communicator import Communicator
+import undetected_chromedriver as uc
 from database import DataSaver
 from parser import Parser  # Import the Parser class
 import signal
@@ -50,20 +56,12 @@ class Backend(Base):
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
 
-        Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
-
-        try:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                uc.TARGET_DIR = tmpdirname
-                # Update this line to specify the path to your browser executable if necessary
-                self.driver = uc.Chrome(options=options, browser_executable_path='/usr/bin/chromium-browser')
-
-        except NameError:
-            self.driver = uc.Chrome(options=options, browser_executable_path='/usr/bin/chromium-browser')
-
         Communicator.show_message("Opening browser...")
+
+        self.driver = uc.Chrome(options=options, driver_executable_path=DRIVER_EXECUTABLE_PATH)
+
         self.driver.maximize_window()
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(self.timeout)
 
     def mainscraping(self):
         data = []
@@ -79,8 +77,6 @@ class Backend(Base):
             sleep(1)
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
-            if not all_results_links:
-                Communicator.show_message("We are sorry but, No results found for your search query on google maps....")
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")
@@ -117,3 +113,11 @@ class Backend(Base):
         except Exception as e:
             Communicator.show_message(f"Error occurred while getting result links. Error: {str(e)}")
         return results_links
+
+    def cleanup(self):
+        try:
+            Communicator.show_message("Closing the driver")
+            self.driver.close()
+            self.driver.quit()
+        except Exception as e:
+            Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")

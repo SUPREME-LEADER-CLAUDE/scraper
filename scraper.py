@@ -5,6 +5,8 @@ import tempfile
 import logging
 import undetected_chromedriver as uc  # Use undetected_chromedriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from base import Base
 from scroller import Scroller
 from communicator import Communicator
@@ -83,7 +85,7 @@ class Backend(Base):
             self.openingurl(url=link_of_page)
             Communicator.show_message("Working start...")
             logging.debug("Navigated to URL: %s", link_of_page)
-            sleep(1)
+            sleep(5)  # Add sleep to allow page to load completely
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
             data = self.collect_data(all_results_links)
@@ -120,6 +122,9 @@ class Backend(Base):
     def get_all_results_links(self):
         results_links = []
         try:
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[role='feed']"))
+            )
             elements = self.driver.find_elements(By.CSS_SELECTOR, "a.result-title")
             for elem in elements:
                 link = elem.get_attribute("href")

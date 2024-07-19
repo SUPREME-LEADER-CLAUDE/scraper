@@ -8,6 +8,7 @@ that will handle the scraping process
 from time import sleep
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from base import Base
 from scroller import Scroller
@@ -70,7 +71,8 @@ class Backend(Base):
             logging.error(f"Error downloading ChromeDriver: {e}")
             sys.exit(1)
 
-        self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
+        service = Service(driver_path)
+        self.driver = webdriver.Chrome(service=service, options=options)
         logging.debug("ChromeDriver initialized successfully.")
 
         self.driver.maximize_window()

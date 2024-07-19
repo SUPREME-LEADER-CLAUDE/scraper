@@ -4,18 +4,11 @@ from communicator import Communicator
 from database import DataSaver
 from base import Base
 from common import Common
-import logging
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-
-# Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Parser(Base):
     def __init__(self, driver, searchquery) -> None:
         self.driver = driver
-        self.searchquery = searchquery
+        self.searchquery = searchquery  # Add searchquery to the constructor
         self.finalData = []
         self.comparing_tool_tips = {
             "location": "Copy address",
@@ -27,8 +20,9 @@ class Parser(Base):
         self.data_saver = DataSaver()
 
     def parse(self):
-        infoSheet = WebDriverWait(self.driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[role="main"]'))
+        """Our function to parse the html"""
+        infoSheet = self.driver.execute_script(
+            """return document.querySelector("[role='main']")"""
         )
         if infoSheet is None:
             Communicator.show_error_message("No information sheet found", ERROR_CODES['ERR_NO_INFO_SHEET'])
@@ -88,6 +82,24 @@ class Parser(Base):
 
         except Exception as e:
             Communicator.show_error_message(f"Error occurred while parsing a location. Error is: {str(e)}.", ERROR_CODES['ERR_WHILE_PARSING_DETAILS'])
+
+    def main(self, allResultsLinks):
+        Communicator.show_message("Scrolling is done. Now going to scrape each location")
+        try:
+            for resultLink in allResultsLinks:
+                if Common.close_thread_is_set():
+                    self.driver.quit()
+                    return
+
+                self.openingurl(url=resultLink)
+                self.parse()
+
+        except Exception as e:
+            Communicator.show_message(f"Error occurred while parsing the locations. Error: {str(e)}")
+        finally:
+            self.init_data_saver()
+            Communicator.show_message(f"Final data collected: {self.finalData}")
+            self.data_saver.save(datalist=self.finalData, query=self.searchquery)  # Pass searchquery to save
 
     def main(self, allResultsLinks):
         Communicator.show_message("Scrolling is done. Now going to scrape each location")

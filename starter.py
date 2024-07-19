@@ -1,5 +1,3 @@
-# starter.py
-
 import argparse
 import os
 import numpy as np
@@ -14,8 +12,7 @@ import logging
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
-# Global variable to keep track of processes and drivers
+# Global variables
 processes = []
 all_results = []
 search_query = ""

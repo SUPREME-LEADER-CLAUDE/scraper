@@ -4,13 +4,6 @@ from common import Common
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import JavascriptException
 from parser import Parser
-import logging
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-
-# Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Scroller:
 
@@ -32,10 +25,13 @@ class Scroller:
         self.parser.main(self.__allResultsLinks)
 
     def scroll(self):
+        """In case search results are not available"""
         scrollable_element = self.get_scrollable_element()
+
         if scrollable_element is None:
             Communicator.show_message(message="We are sorry but, No results found for your search query on google maps....")
             return
+
         Communicator.show_message(message="Starting scrolling")
         self.perform_scrolling(scrollable_element)
         Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
@@ -43,17 +39,14 @@ class Scroller:
 
     def get_scrollable_element(self):
         try:
-            element = WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '[role="feed"]'))
-            )
-            return element
-        except Exception as e:
+            return self.driver.execute_script("return document.querySelector('[role=\"feed\"]')")
+        except JavascriptException as e:
             Communicator.show_error_message(f"Error finding scrollable element: {e}", 'ERR_SCROLLABLE_ELEMENT_NOT_FOUND')
             return None
 
     def perform_scrolling(self, scrollable_element):
         last_height = 0
-        dynamic_sleep_time = 1
+        dynamic_sleep_time = 5  # Increased sleep time to allow page to load fully
 
         while True:
             if Common.close_thread_is_set():
@@ -78,7 +71,7 @@ class Scroller:
                 last_height = new_height
                 self.collect_results_links(scrollable_element)
                 Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
-                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.1)
+                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.5)  # Decrease sleep time for faster scrolling
 
     def is_end_of_list(self):
         try:
@@ -99,7 +92,6 @@ class Scroller:
             all_results_list_soup = BeautifulSoup(scrollable_element.get_attribute('outerHTML'), 'html.parser')
             all_results_anchor_tags = all_results_list_soup.find_all('a', class_='hfpxzc')
             self.__allResultsLinks = [anchor_tag.get('href') for anchor_tag in all_results_anchor_tags if anchor_tag.get('href')]
-            logging.debug(f"Collected result links: {self.__allResultsLinks}")
             if not self.__allResultsLinks:
                 Communicator.show_message("No links found during scrolling.")
         except Exception as e:

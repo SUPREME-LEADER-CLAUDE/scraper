@@ -78,17 +78,8 @@ class Backend(Base):
                 locationwithplus = "+".join(self.location.split())
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}+in+{locationwithplus}/"
             self.openingurl(url=link_of_page)
-            Communicator.show_message(f"Navigated to URL: {link_of_page}")
-            sleep(1)  # Ensure the page loads completely
-
-            # Additional logging to debug element finding
-            Communicator.show_message("Looking for the [role='feed'] element")
-            feed_element = self.driver.execute_script("return document.querySelector('[role=\"feed\"]')")
-            if feed_element is None:
-                Communicator.show_error_message("Error: Feed element not found", "ERR_NO_FEED_ELEMENT")
-            else:
-                Communicator.show_message("Feed element found")
-
+            Communicator.show_message("Working start...")
+            sleep(1)
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
             data = self.collect_data(all_results_links)

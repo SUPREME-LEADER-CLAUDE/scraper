@@ -7,11 +7,11 @@ that will handle the scraping process
 
 from time import sleep
 from selenium.webdriver.common.by import By
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 from base import Base
 from scroller import Scroller
-from settings import DRIVER_EXECUTABLE_PATH
 from communicator import Communicator
-import undetected_chromedriver as uc
 from database import DataSaver
 from parser import Parser  # Import the Parser class
 import signal
@@ -49,7 +49,7 @@ class Backend(Base):
         self.parser = Parser(driver=self.driver, searchquery=self.searchquery)  # Instantiate the Parser class with searchquery
 
     def init_driver(self):
-        options = uc.ChromeOptions()
+        options = webdriver.ChromeOptions()
         if self.headlessMode == 1:
             options.headless = True
 
@@ -58,7 +58,7 @@ class Backend(Base):
 
         Communicator.show_message("Opening browser...")
 
-        self.driver = uc.Chrome(options=options, driver_executable_path=DRIVER_EXECUTABLE_PATH)
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)
@@ -80,6 +80,7 @@ class Backend(Base):
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")
+            logging.error(f"Error occurred while scraping: {e}")
         finally:
             try:
                 Communicator.show_message("Closing the driver")
@@ -87,6 +88,7 @@ class Backend(Base):
                 self.driver.quit()
             except Exception as e:
                 Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
+                logging.error(f"Error occurred while closing the driver: {e}")
             Communicator.end_processing()
 
             # Save data using DataSaver
@@ -95,6 +97,7 @@ class Backend(Base):
                 self.data_saver.save(data, self.searchquery)  # Pass searchquery to DataSaver.save()
             else:
                 Communicator.show_message(f"Not enough data collected to save. Only {len(data)} entries found.")
+                logging.warning(f"Not enough data collected to save. Only {len(data)} entries found.")
         return data
 
     def collect_data(self, all_results_links):
@@ -112,6 +115,7 @@ class Backend(Base):
                     results_links.append(link)
         except Exception as e:
             Communicator.show_message(f"Error occurred while getting result links. Error: {str(e)}")
+            logging.error(f"Error occurred while getting result links: {e}")
         return results_links
 
     def cleanup(self):
@@ -121,3 +125,4 @@ class Backend(Base):
             self.driver.quit()
         except Exception as e:
             Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
+            logging.error(f"Error occurred while closing the driver: {e}")

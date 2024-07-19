@@ -1,10 +1,3 @@
-# scraper.py
-
-"""
-This module contains the code for the backend,
-that will handle the scraping process
-"""
-
 from time import sleep
 from selenium.webdriver.common.by import By
 from base import Base
@@ -20,7 +13,7 @@ import sys
 import logging
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime=s - %(levelname)s - %(message)s')
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -62,14 +55,15 @@ class Backend(Base):
         try:
             with tempfile.TemporaryDirectory() as tmpdirname:
                 uc.TARGET_DIR = tmpdirname
-                self.driver = uc.Chrome(options=options)
+                # Update this line to specify the path to your browser executable if necessary
+                self.driver = uc.Chrome(options=options, browser_executable_path='/usr/bin/chromium-browser')
 
         except NameError:
-            self.driver = uc.Chrome(options=options)
+            self.driver = uc.Chrome(options=options, browser_executable_path='/usr/bin/chromium-browser')
 
         Communicator.show_message("Opening browser...")
         self.driver.maximize_window()
-        self.driver.implicitly_wait(self.timeout)
+        self.driver.implicitly_wait(10)
 
     def mainscraping(self):
         data = []

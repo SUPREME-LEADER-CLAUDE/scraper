@@ -10,7 +10,7 @@ import json
 import logging
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname=s - %(message)s')
 
 # Global variable to keep track of processes and drivers
 processes = []

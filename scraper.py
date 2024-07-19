@@ -2,10 +2,6 @@ import logging
 from time import sleep
 import tempfile
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.chrome.options import Options
 import undetected_chromedriver as uc
 from base import Base
 from scroller import Scroller
@@ -16,7 +12,6 @@ from parser import Parser
 import signal
 import sys
 import time
-
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -49,27 +44,26 @@ class Backend(Base):
         self.parser = Parser(driver=self.driver, searchquery=self.searchquery)  # Instantiate the Parser class with searchquery
 
     def init_driver(self):
-        options = uc.ChromeOptions()
-        if self.headlessMode == 1:
-            options.headless = True
-
-        prefs = {"profile.managed_default_content_settings.images": 2}
-        options.add_experimental_option("prefs", prefs)
-
-        Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
-
-        retry_count = 3
-        for attempt in range(retry_count):
+        for attempt in range(3):
             try:
+                options = uc.ChromeOptions()
+                if self.headlessMode == 1:
+                    options.headless = True
+
+                prefs = {"profile.managed_default_content_settings.images": 2}
+                options.add_experimental_option("prefs", prefs)
+
+                Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
+                
                 with tempfile.TemporaryDirectory() as tmpdirname:
-                    uc.TARGET_DIR = tmpdirname
+                    options.add_argument(f"--user-data-dir={tmpdirname}")
                     logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
                     self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
                 break  # Exit the loop if successful
             except Exception as e:
-                logging.error(f"Attempt {attempt + 1} of {retry_count}: Error during Chrome driver initialization: {e}")
+                logging.error(f"Attempt {attempt + 1} of 3: Error during Chrome driver initialization: {e}")
                 time.sleep(5)  # Wait before retrying
-                if attempt == retry_count - 1:
+                if attempt == 2:
                     raise
 
         Communicator.show_message("Opening browser...")

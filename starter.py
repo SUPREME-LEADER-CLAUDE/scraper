@@ -10,9 +10,10 @@ import json
 import logging
 import psutil
 import time
+import subprocess
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Global variables
 processes = []
@@ -132,8 +133,22 @@ def signal_handler(sig, frame):
 # Register the signal handler for CTRL+C
 signal.signal(signal.SIGINT, signal_handler)
 
+def log_versions():
+    try:
+        chrome_version = subprocess.check_output(['google-chrome', '--version']).decode('utf-8').strip()
+        logging.info(f"Google Chrome version: {chrome_version}")
+    except Exception as e:
+        logging.error(f"Error retrieving Chrome version: {e}")
+
+    try:
+        chromedriver_version = subprocess.check_output(['/root/.local/share/undetected_chromedriver/undetected_chromedriver', '--version']).decode('utf-8').strip()
+        logging.info(f"ChromeDriver version: {chromedriver_version}")
+    except Exception as e:
+        logging.error(f"Error retrieving ChromeDriver version: {e}")
+
 def main():
     global search_query
+    log_versions()  # Log versions at the start
     parser = argparse.ArgumentParser()
 
     parser.add_argument("value", type=str, help="""Arguments being passed to script.

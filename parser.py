@@ -4,6 +4,10 @@ from communicator import Communicator
 from database import DataSaver
 from base import Base
 from common import Common
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Parser(Base):
     def __init__(self, driver, searchquery) -> None:
@@ -33,6 +37,7 @@ class Parser(Base):
 
             html = infoSheet.get_attribute("outerHTML")
             soup = BeautifulSoup(html, "html.parser")
+            logging.debug(f"Info sheet HTML: {html}")
 
             try:
                 rating = soup.find("span", class_="ceNzKf").get("aria-label")

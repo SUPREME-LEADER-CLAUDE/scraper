@@ -4,6 +4,10 @@ from common import Common
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import JavascriptException
 from parser import Parser
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Scroller:
 
@@ -27,12 +31,14 @@ class Scroller:
     def scroll(self):
         """In case search results are not available"""
         scrollable_element = self.get_scrollable_element()
-
+        
         if scrollable_element is None:
             Communicator.show_message(message="We are sorry but, No results found for your search query on google maps....")
             return
 
         Communicator.show_message(message="Starting scrolling")
+        logging.debug(f"Scrollable element found: {scrollable_element}")
+
         self.perform_scrolling(scrollable_element)
         Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
         self.start_parsing()
@@ -92,6 +98,7 @@ class Scroller:
             all_results_list_soup = BeautifulSoup(scrollable_element.get_attribute('outerHTML'), 'html.parser')
             all_results_anchor_tags = all_results_list_soup.find_all('a', class_='hfpxzc')
             self.__allResultsLinks = [anchor_tag.get('href') for anchor_tag in all_results_anchor_tags if anchor_tag.get('href')]
+            logging.debug(f"Collected result links: {self.__allResultsLinks}")
             if not self.__allResultsLinks:
                 Communicator.show_message("No links found during scrolling.")
         except Exception as e:

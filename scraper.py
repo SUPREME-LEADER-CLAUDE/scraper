@@ -6,21 +6,20 @@ that will handle the scraping process
 """
 
 from time import sleep
+import tempfile
+import logging
+import undetected_chromedriver as uc  # Use undetected_chromedriver
 from selenium.webdriver.common.by import By
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from base import Base
 from scroller import Scroller
 from communicator import Communicator
-from database import DataSaver
-from parser import Parser  # Import the Parser class
+from database import DataSaver, save_and_upload_results
+from parser import Parser
 import signal
 import sys
-import logging
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -50,34 +49,27 @@ class Backend(Base):
         self.parser = Parser(driver=self.driver, searchquery=self.searchquery)  # Instantiate the Parser class with searchquery
 
     def init_driver(self):
-        options = webdriver.ChromeOptions()
+        options = uc.ChromeOptions()
         if self.headlessMode == 1:
-            options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-
-        # Explicitly set the path to the Google Chrome binary
-        options.binary_location = "/usr/bin/google-chrome"
+            options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
 
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
 
-        Communicator.show_message("Opening browser...")
-        logging.debug("Initializing ChromeDriver with options: %s", options.arguments)
+        Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
 
         try:
-            # Automatically get the matching ChromeDriver version
-            service = Service(ChromeDriverManager().install())
-            logging.debug("ChromeDriver service initialized.")
-        except Exception as e:
-            Communicator.show_message(f"Error downloading ChromeDriver: {str(e)}")
-            logging.error(f"Error downloading ChromeDriver: {e}")
-            sys.exit(1)
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                uc.TARGET_DIR = tmpdirname
+                self.driver = uc.Chrome(options=options)
 
-        self.driver = webdriver.Chrome(service=service, options=options)
-        logging.debug("ChromeDriver initialized successfully.")
+        except NameError:
+            self.driver = uc.Chrome(options=options)
 
+        Communicator.show_message("Opening browser...")
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)
 
@@ -87,11 +79,9 @@ class Backend(Base):
             querywithplus = "+".join(self.searchquery.split())
             if self.lat_center and self.long_center:
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}/@{self.lat_center},{self.long_center},14z"
-                logging.debug(f"Generated Google Maps URL with coordinates: {link_of_page}")
             else:
                 locationwithplus = "+".join(self.location.split())
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}+in+{locationwithplus}/"
-                logging.debug(f"Generated Google Maps URL with location: {link_of_page}")
             self.openingurl(url=link_of_page)
             Communicator.show_message("Working start...")
             sleep(1)
@@ -100,7 +90,6 @@ class Backend(Base):
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")
-            logging.error(f"Error occurred while scraping: {e}")
         finally:
             try:
                 Communicator.show_message("Closing the driver")
@@ -108,16 +97,15 @@ class Backend(Base):
                 self.driver.quit()
             except Exception as e:
                 Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
-                logging.error(f"Error occurred while closing the driver: {e}")
             Communicator.end_processing()
 
             # Save data using DataSaver
             Communicator.show_message(f"Saving data: {data}")
             if len(data) >= 5:  # Ensure data has at least 5 entries before saving and uploading
                 self.data_saver.save(data, self.searchquery)  # Pass searchquery to DataSaver.save()
+                save_and_upload_results(data, self.searchquery, "scrapedcompetitors")
             else:
                 Communicator.show_message(f"Not enough data collected to save. Only {len(data)} entries found.")
-                logging.warning(f"Not enough data collected to save. Only {len(data)} entries found.")
         return data
 
     def collect_data(self, all_results_links):

@@ -76,7 +76,6 @@ class Backend(Base):
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)
 
-
     def mainscraping(self):
         data = []
         try:

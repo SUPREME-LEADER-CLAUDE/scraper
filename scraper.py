@@ -58,7 +58,7 @@ class Backend(Base):
 
         Communicator.show_message("Opening browser...")
 
-        self.driver = webdriver.Chrome(ChromeDriverManager(version="114.0.5735.90").install(), options=options)
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(version="114.0.5735.90"), options=options)
 
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)

@@ -51,9 +51,8 @@ class Backend(Base):
 
     def init_driver(self):
         options = webdriver.ChromeOptions()
-        # Temporarily disable headless mode for debugging
-        # if self.headlessMode == 1:
-        #     options.add_argument("--headless")
+        if self.headlessMode == 1:
+            options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -88,9 +87,11 @@ class Backend(Base):
             querywithplus = "+".join(self.searchquery.split())
             if self.lat_center and self.long_center:
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}/@{self.lat_center},{self.long_center},14z"
+                logging.debug(f"Generated Google Maps URL with coordinates: {link_of_page}")
             else:
                 locationwithplus = "+".join(self.location.split())
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}+in+{locationwithplus}/"
+                logging.debug(f"Generated Google Maps URL with location: {link_of_page}")
             self.openingurl(url=link_of_page)
             Communicator.show_message("Working start...")
             sleep(1)

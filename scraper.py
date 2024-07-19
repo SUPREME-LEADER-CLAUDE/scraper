@@ -51,17 +51,31 @@ class Backend(Base):
     def init_driver(self):
         options = webdriver.ChromeOptions()
         if self.headlessMode == 1:
-            options.headless = True
+            options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
 
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
 
         Communicator.show_message("Opening browser...")
+        logging.debug("Initializing ChromeDriver with options: %s", options.arguments)
 
-        self.driver = webdriver.Chrome(ChromeDriverManager(driver_version="114.0.5735.90").install(), options=options)
+        try:
+            driver_path = ChromeDriverManager(driver_version="114.0.5735.90").install()
+            logging.debug("ChromeDriver path: %s", driver_path)
+        except Exception as e:
+            Communicator.show_message(f"Error downloading ChromeDriver: {str(e)}")
+            logging.error(f"Error downloading ChromeDriver: {e}")
+            sys.exit(1)
+
+        self.driver = webdriver.Chrome(executable_path=driver_path, options=options)
+        logging.debug("ChromeDriver initialized successfully.")
 
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)
+
 
     def mainscraping(self):
         data = []

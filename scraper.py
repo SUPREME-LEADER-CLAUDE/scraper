@@ -1,15 +1,19 @@
+import logging
 from time import sleep
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.chrome.options import Options
+import undetected_chromedriver as uc
 from base import Base
 from scroller import Scroller
-import tempfile
-import undetected_chromedriver as uc
+from settings import DRIVER_EXECUTABLE_PATH
 from communicator import Communicator
 from database import DataSaver, save_and_upload_results
-from parser import Parser  # Import the Parser class
+from parser import Parser
 import signal
 import sys
-import logging
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,9 +56,7 @@ class Backend(Base):
         Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
 
         try:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                uc.TARGET_DIR = tmpdirname
-                self.driver = uc.Chrome(options=options)
+            self.driver = uc.Chrome(options=options)
 
         except NameError:
             self.driver = uc.Chrome(options=options)
@@ -73,15 +75,29 @@ class Backend(Base):
                 locationwithplus = "+".join(self.location.split())
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}+in+{locationwithplus}/"
             self.openingurl(url=link_of_page)
-            Communicator.show_message("Working start...")
-            sleep(1)
+            Communicator.show_message(f"Navigated to URL: {link_of_page}")
+            sleep(1)  # Ensure the page loads completely
+
+            # Additional logging to debug element finding
+            Communicator.show_message("Looking for the [role='feed'] element")
+            feed_element = self.driver.execute_script("return document.querySelector('[role=\"feed\"]')")
+            if feed_element is None:
+                Communicator.show_error_message("Error: Feed element not found", "ERR_NO_FEED_ELEMENT")
+            else:
+                Communicator.show_message("Feed element found")
+
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")
         finally:
-            self.cleanup()
+            try:
+                Communicator.show_message("Closing the driver")
+                self.driver.close()
+                self.driver.quit()
+            except Exception as e:
+                Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
             Communicator.end_processing()
 
             # Save data using DataSaver
@@ -101,6 +117,7 @@ class Backend(Base):
     def get_all_results_links(self):
         results_links = []
         try:
+            Communicator.show_message("Finding result links with CSS selector 'a.result-title'")
             elements = self.driver.find_elements(By.CSS_SELECTOR, "a.result-title")
             for elem in elements:
                 link = elem.get_attribute("href")
@@ -108,11 +125,5 @@ class Backend(Base):
                     results_links.append(link)
         except Exception as e:
             Communicator.show_message(f"Error occurred while getting result links. Error: {str(e)}")
+        Communicator.show_message(f"Results links collected: {results_links}")
         return results_links
-
-    def cleanup(self):
-        try:
-            Communicator.show_message("Closing the driver")
-            self.driver.quit()
-        except Exception as e:
-            Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")

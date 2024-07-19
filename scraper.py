@@ -15,6 +15,8 @@ from database import DataSaver, save_and_upload_results
 from parser import Parser
 import signal
 import sys
+import time
+
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,13 +58,19 @@ class Backend(Base):
 
         Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
 
-        try:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                uc.TARGET_DIR = tmpdirname
-                self.driver = uc.Chrome(options=options)
-
-        except NameError:
-            self.driver = uc.Chrome(options=options)
+        retry_count = 3
+        for attempt in range(retry_count):
+            try:
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                    uc.TARGET_DIR = tmpdirname
+                    logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
+                    self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
+                break  # Exit the loop if successful
+            except Exception as e:
+                logging.error(f"Attempt {attempt + 1} of {retry_count}: Error during Chrome driver initialization: {e}")
+                time.sleep(5)  # Wait before retrying
+                if attempt == retry_count - 1:
+                    raise
 
         Communicator.show_message("Opening browser...")
         self.driver.maximize_window()

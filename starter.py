@@ -157,7 +157,7 @@ def main():
     parser.add_argument("--locations_file", type=str, help="File with list of locations", required=False)
     parser.add_argument("--industries_file", type=str, help="File with list of industries", required=False)
     parser.add_argument("--num_locations", type=int, default=1, help="Number of locations to select from the file", required=False)
-    parser.add_argument("--headless_mode", type=int, choices=[0, 1], default=1, help="Headless mode (1 for true, 0 for false)")
+    parser.add_argument("--headless_mode", type=int, choices=[0, 1], default=0, help="Headless mode (1 for true, 0 for false)")
 
     args = parser.parse_args()
 

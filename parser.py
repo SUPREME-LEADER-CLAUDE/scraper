@@ -5,6 +5,9 @@ from database import DataSaver
 from base import Base
 from common import Common
 import logging
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -12,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class Parser(Base):
     def __init__(self, driver, searchquery) -> None:
         self.driver = driver
-        self.searchquery = searchquery  # Add searchquery to the constructor
+        self.searchquery = searchquery
         self.finalData = []
         self.comparing_tool_tips = {
             "location": "Copy address",
@@ -24,9 +27,8 @@ class Parser(Base):
         self.data_saver = DataSaver()
 
     def parse(self):
-        """Our function to parse the html"""
-        infoSheet = self.driver.execute_script(
-            """return document.querySelector("[role='main']")"""
+        infoSheet = WebDriverWait(self.driver, 20).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[role="main"]'))
         )
         if infoSheet is None:
             Communicator.show_error_message("No information sheet found", ERROR_CODES['ERR_NO_INFO_SHEET'])
@@ -37,7 +39,6 @@ class Parser(Base):
 
             html = infoSheet.get_attribute("outerHTML")
             soup = BeautifulSoup(html, "html.parser")
-            logging.debug(f"Info sheet HTML: {html}")
 
             try:
                 rating = soup.find("span", class_="ceNzKf").get("aria-label")
@@ -104,4 +105,4 @@ class Parser(Base):
         finally:
             self.init_data_saver()
             Communicator.show_message(f"Final data collected: {self.finalData}")
-            self.data_saver.save(datalist=self.finalData, query=self.searchquery)  # Pass searchquery to save
+            self.data_saver.save(datalist=self.finalData, query=self.searchquery)

@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import JavascriptException
 from parser import Parser
 import logging
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,24 +32,22 @@ class Scroller:
         self.parser.main(self.__allResultsLinks)
 
     def scroll(self):
-        """In case search results are not available"""
         scrollable_element = self.get_scrollable_element()
-        
         if scrollable_element is None:
             Communicator.show_message(message="We are sorry but, No results found for your search query on google maps....")
             return
-
         Communicator.show_message(message="Starting scrolling")
-        logging.debug(f"Scrollable element found: {scrollable_element}")
-
         self.perform_scrolling(scrollable_element)
         Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
         self.start_parsing()
 
     def get_scrollable_element(self):
         try:
-            return self.driver.execute_script("return document.querySelector('[role=\"feed\"]')")
-        except JavascriptException as e:
+            element = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[role="feed"]'))
+            )
+            return element
+        except Exception as e:
             Communicator.show_error_message(f"Error finding scrollable element: {e}", 'ERR_SCROLLABLE_ELEMENT_NOT_FOUND')
             return None
 
@@ -77,7 +78,7 @@ class Scroller:
                 last_height = new_height
                 self.collect_results_links(scrollable_element)
                 Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
-                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.1)  # Decrease sleep time for faster scrolling
+                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.1)
 
     def is_end_of_list(self):
         try:

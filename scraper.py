@@ -1,5 +1,6 @@
 import logging
 from time import sleep
+import tempfile
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
@@ -56,7 +57,9 @@ class Backend(Base):
         Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
 
         try:
-            self.driver = uc.Chrome(options=options)
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                uc.TARGET_DIR = tmpdirname
+                self.driver = uc.Chrome(options=options)
 
         except NameError:
             self.driver = uc.Chrome(options=options)

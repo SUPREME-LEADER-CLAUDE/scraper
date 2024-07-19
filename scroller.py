@@ -4,9 +4,12 @@ from common import Common
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import JavascriptException
 from parser import Parser
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 class Scroller:
-
     def __init__(self, driver, searchquery) -> None:
         self.driver = driver
         self.searchquery = searchquery
@@ -39,14 +42,17 @@ class Scroller:
 
     def get_scrollable_element(self):
         try:
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[role="feed"]'))
+            )
             return self.driver.execute_script("return document.querySelector('[role=\"feed\"]')")
-        except JavascriptException as e:
+        except TimeoutException as e:
             Communicator.show_error_message(f"Error finding scrollable element: {e}", 'ERR_SCROLLABLE_ELEMENT_NOT_FOUND')
             return None
 
     def perform_scrolling(self, scrollable_element):
         last_height = 0
-        dynamic_sleep_time = 5  # Increased sleep time to allow page to load fully
+        dynamic_sleep_time = 1
 
         while True:
             if Common.close_thread_is_set():
@@ -71,7 +77,7 @@ class Scroller:
                 last_height = new_height
                 self.collect_results_links(scrollable_element)
                 Communicator.show_message(f"Total locations scrolled: {len(self.__allResultsLinks)}")
-                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.5)  # Decrease sleep time for faster scrolling
+                dynamic_sleep_time = max(1, dynamic_sleep_time - 0.1)  # Decrease sleep time for faster scrolling
 
     def is_end_of_list(self):
         try:

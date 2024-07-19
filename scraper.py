@@ -51,8 +51,9 @@ class Backend(Base):
 
     def init_driver(self):
         options = webdriver.ChromeOptions()
-        if self.headlessMode == 1:
-            options.add_argument("--headless")
+        # Temporarily disable headless mode for debugging
+        # if self.headlessMode == 1:
+        #     options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")

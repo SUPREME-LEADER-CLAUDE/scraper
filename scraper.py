@@ -57,6 +57,9 @@ class Backend(Base):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
 
+        # Explicitly set the path to the Google Chrome binary
+        options.binary_location = "/usr/bin/google-chrome"
+
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
 
@@ -64,14 +67,14 @@ class Backend(Base):
         logging.debug("Initializing ChromeDriver with options: %s", options.arguments)
 
         try:
-            driver_path = ChromeDriverManager(driver_version="114.0.5735.90").install()
-            logging.debug("ChromeDriver path: %s", driver_path)
+            # Automatically get the matching ChromeDriver version
+            service = Service(ChromeDriverManager().install())
+            logging.debug("ChromeDriver service initialized.")
         except Exception as e:
             Communicator.show_message(f"Error downloading ChromeDriver: {str(e)}")
             logging.error(f"Error downloading ChromeDriver: {e}")
             sys.exit(1)
 
-        service = Service(driver_path)
         self.driver = webdriver.Chrome(service=service, options=options)
         logging.debug("ChromeDriver initialized successfully.")
 

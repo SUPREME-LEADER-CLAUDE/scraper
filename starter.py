@@ -1,7 +1,7 @@
 import argparse
 import os
 import numpy as np
-from multiprocessing import Pool, current_process
+from multiprocessing import Pool, current_process, Semaphore
 from scraper import Backend
 from database import DataSaver
 import signal
@@ -19,6 +19,7 @@ search_query = ""
 data_saver = DataSaver()
 progress_file = "progress.json"
 MAX_CONCURRENT_DRIVERS = 12  # Set the maximum number of concurrent chromedriver instances
+semaphore = Semaphore(MAX_CONCURRENT_DRIVERS)  # Create a semaphore to limit concurrent drivers
 
 def get_city_data(city_name):
     locations_file_path = 'locations.txt'
@@ -68,21 +69,25 @@ def generate_pie_subregions(lat_center, long_center, num_divisions):
 
 def scrape_subregion(args):
     global all_results
-    search_query, headless_mode, lat_center, long_center, start_angle, end_angle = args
-    backend = Backend(
-        searchquery=search_query,
-        outputformat='json',
-        headlessmode=headless_mode,
-        lat_center=lat_center,
-        long_center=long_center,
-        start_angle=start_angle,
-        end_angle=end_angle
-    )
-    processes.append(current_process())
-    result = backend.mainscraping()
-    all_results.extend(result)
-    backend.cleanup()  # Ensure the driver is closed after scraping
-    return result
+    semaphore.acquire()  # Acquire a semaphore slot
+    try:
+        search_query, headless_mode, lat_center, long_center, start_angle, end_angle = args
+        backend = Backend(
+            searchquery=search_query,
+            outputformat='json',
+            headlessmode=headless_mode,
+            lat_center=lat_center,
+            long_center=long_center,
+            start_angle=start_angle,
+            end_angle=end_angle
+        )
+        processes.append(current_process())
+        result = backend.mainscraping()
+        all_results.extend(result)
+        backend.cleanup()  # Ensure the driver is closed after scraping
+        return result
+    finally:
+        semaphore.release()  # Release the semaphore slot
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Saving results...')

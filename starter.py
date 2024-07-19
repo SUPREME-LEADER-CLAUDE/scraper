@@ -8,6 +8,8 @@ import signal
 import sys
 import json
 import logging
+import psutil
+import time
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,6 +22,11 @@ data_saver = DataSaver()
 progress_file = "progress.json"
 MAX_CONCURRENT_DRIVERS = 12  # Set the maximum number of concurrent chromedriver instances
 semaphore = Semaphore(MAX_CONCURRENT_DRIVERS)  # Create a semaphore to limit concurrent drivers
+MIN_CONCURRENT_DRIVERS = 1  # Minimum number of concurrent chromedriver instances
+
+# Resource limits
+MAX_CPU_USAGE = 99  # Maximum CPU usage percentage
+MAX_RAM_USAGE = 30 * 1024 * 1024 * 1024  # Maximum RAM usage in bytes (30 GB)
 
 def get_city_data(city_name):
     locations_file_path = 'locations.txt'
@@ -67,6 +74,23 @@ def generate_pie_subregions(lat_center, long_center, num_divisions):
     
     return subregions
 
+def monitor_resources():
+    """Monitor CPU and RAM usage and adjust concurrent processes."""
+    cpu_usage = psutil.cpu_percent(interval=1)
+    ram_usage = psutil.virtual_memory().used
+
+    # Adjust the number of concurrent drivers
+    if cpu_usage > MAX_CPU_USAGE or ram_usage > MAX_RAM_USAGE:
+        # Reduce the number of concurrent drivers
+        new_limit = max(MIN_CONCURRENT_DRIVERS, semaphore._value - 1)
+        semaphore._value = new_limit
+        logging.warning(f"Reducing concurrent drivers to {new_limit} due to high resource usage.")
+    else:
+        # Increase the number of concurrent drivers if below max limit
+        new_limit = min(MAX_CONCURRENT_DRIVERS, semaphore._value + 1)
+        semaphore._value = new_limit
+        logging.info(f"Increasing concurrent drivers to {new_limit}.")
+
 def scrape_subregion(args):
     global all_results
     semaphore.acquire()  # Acquire a semaphore slot
@@ -85,6 +109,10 @@ def scrape_subregion(args):
         result = backend.mainscraping()
         all_results.extend(result)
         backend.cleanup()  # Ensure the driver is closed after scraping
+
+        # Monitor resources after scraping
+        monitor_resources()
+
         return result
     finally:
         semaphore.release()  # Release the semaphore slot

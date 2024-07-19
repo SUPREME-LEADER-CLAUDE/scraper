@@ -1,10 +1,5 @@
 # scraper.py
 
-"""
-This module contains the code for the backend,
-that will handle the scraping process
-"""
-
 from time import sleep
 import tempfile
 import logging
@@ -60,16 +55,19 @@ class Backend(Base):
         options.add_experimental_option("prefs", prefs)
 
         Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
+        logging.debug("Initializing ChromeDriver with options: %s", options.arguments)
 
         try:
             with tempfile.TemporaryDirectory() as tmpdirname:
                 uc.TARGET_DIR = tmpdirname
                 self.driver = uc.Chrome(options=options)
-
+                logging.debug("ChromeDriver initialized with temporary directory: %s", tmpdirname)
         except NameError:
             self.driver = uc.Chrome(options=options)
+            logging.debug("ChromeDriver initialized without temporary directory")
 
         Communicator.show_message("Opening browser...")
+        logging.debug("Opening browser...")
         self.driver.maximize_window()
         self.driver.implicitly_wait(self.timeout)
 
@@ -84,12 +82,14 @@ class Backend(Base):
                 link_of_page = f"https://www.google.com/maps/search/{querywithplus}+in+{locationwithplus}/"
             self.openingurl(url=link_of_page)
             Communicator.show_message("Working start...")
+            logging.debug("Navigated to URL: %s", link_of_page)
             sleep(1)
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")
+            logging.error("Error occurred while scraping: %s", str(e))
         finally:
             try:
                 Communicator.show_message("Closing the driver")
@@ -97,19 +97,23 @@ class Backend(Base):
                 self.driver.quit()
             except Exception as e:
                 Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
+                logging.error("Error occurred while closing the driver: %s", str(e))
             Communicator.end_processing()
 
             # Save data using DataSaver
             Communicator.show_message(f"Saving data: {data}")
+            logging.debug("Data to be saved: %s", data)
             if len(data) >= 5:  # Ensure data has at least 5 entries before saving and uploading
                 self.data_saver.save(data, self.searchquery)  # Pass searchquery to DataSaver.save()
                 save_and_upload_results(data, self.searchquery, "scrapedcompetitors")
             else:
                 Communicator.show_message(f"Not enough data collected to save. Only {len(data)} entries found.")
+                logging.debug("Not enough data collected to save. Only %d entries found.", len(data))
         return data
 
     def collect_data(self, all_results_links):
         Communicator.show_message(f"Collecting data from links: {all_results_links}")
+        logging.debug("Collecting data from links: %s", all_results_links)
         self.parser.main(all_results_links)
         return self.parser.finalData
 
@@ -121,16 +125,8 @@ class Backend(Base):
                 link = elem.get_attribute("href")
                 if link:
                     results_links.append(link)
+            logging.debug("Results links collected: %s", results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while getting result links. Error: {str(e)}")
-            logging.error(f"Error occurred while getting result links: {e}")
+            logging.error("Error occurred while getting result links: %s", str(e))
         return results_links
-
-    def cleanup(self):
-        try:
-            Communicator.show_message("Closing the driver")
-            self.driver.close()
-            self.driver.quit()
-        except Exception as e:
-            Communicator.show_message(f"Error occurred while closing the driver. Error: {str(e)}")
-            logging.error(f"Error occurred while closing the driver: {e}")

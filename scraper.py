@@ -13,7 +13,7 @@ import sys
 import logging
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime=s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -79,6 +79,8 @@ class Backend(Base):
             sleep(1)
             self.scroller.scroll()
             all_results_links = self.get_all_results_links()
+            if not all_results_links:
+                Communicator.show_message("We are sorry but, No results found for your search query on google maps....")
             data = self.collect_data(all_results_links)
         except Exception as e:
             Communicator.show_message(f"Error occurred while scraping. Error: {str(e)}")

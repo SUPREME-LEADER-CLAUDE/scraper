@@ -26,7 +26,7 @@ semaphore = Semaphore(MAX_CONCURRENT_DRIVERS)  # Create a semaphore to limit con
 MIN_CONCURRENT_DRIVERS = 1  # Minimum number of concurrent chromedriver instances
 
 # Resource limits
-MAX_CPU_USAGE = 99  # Maximum CPU usage percentage
+MAX_CPU_USAGE = 90  # Maximum CPU usage percentage
 MAX_RAM_USAGE = 30 * 1024 * 1024 * 1024  # Maximum RAM usage in bytes (30 GB)
 
 def get_city_data(city_name):

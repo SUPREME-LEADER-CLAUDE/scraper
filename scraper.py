@@ -14,7 +14,7 @@ import sys
 import time
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -54,11 +54,14 @@ class Backend(Base):
                 options.add_experimental_option("prefs", prefs)
 
                 Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
-                
+
                 with tempfile.TemporaryDirectory() as tmpdirname:
                     options.add_argument(f"--user-data-dir={tmpdirname}")
                     logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
-                    self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
+                    if DRIVER_EXECUTABLE_PATH:
+                        self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
+                    else:
+                        self.driver = uc.Chrome(options=options)
                 break  # Exit the loop if successful
             except Exception as e:
                 logging.error(f"Attempt {attempt + 1} of 3: Error during Chrome driver initialization: {e}")

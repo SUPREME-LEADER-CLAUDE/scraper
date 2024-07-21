@@ -21,7 +21,7 @@ all_results = []
 search_query = ""
 data_saver = DataSaver()
 progress_file = "progress.json"
-MAX_CONCURRENT_DRIVERS = 12  # Set the maximum number of concurrent chromedriver instances
+MAX_CONCURRENT_DRIVERS = 6  # Set the maximum number of concurrent chromedriver instances
 semaphore = Semaphore(MAX_CONCURRENT_DRIVERS)  # Create a semaphore to limit concurrent drivers
 MIN_CONCURRENT_DRIVERS = 1  # Minimum number of concurrent chromedriver instances
 

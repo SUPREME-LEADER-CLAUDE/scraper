@@ -5,7 +5,6 @@ from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
 from base import Base
 from scroller import Scroller
-from settings import DRIVER_EXECUTABLE_PATH
 from communicator import Communicator
 from database import DataSaver, save_and_upload_results
 from parser import Parser
@@ -48,7 +47,7 @@ class Backend(Base):
             try:
                 options = uc.ChromeOptions()
                 if self.headlessMode == 1:
-                    options.headless = True
+                    options.add_argument("--headless=new")
 
                 prefs = {"profile.managed_default_content_settings.images": 2}
                 options.add_experimental_option("prefs", prefs)
@@ -58,10 +57,7 @@ class Backend(Base):
                 with tempfile.TemporaryDirectory() as tmpdirname:
                     options.add_argument(f"--user-data-dir={tmpdirname}")
                     logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
-                    if DRIVER_EXECUTABLE_PATH:
-                        self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
-                    else:
-                        self.driver = uc.Chrome(options=options)
+                    self.driver = uc.Chrome(options=options)
                 break  # Exit the loop if successful
             except Exception as e:
                 logging.error(f"Attempt {attempt + 1} of 3: Error during Chrome driver initialization: {e}")

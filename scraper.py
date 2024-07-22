@@ -11,11 +11,10 @@ from parser import Parser
 import signal
 import sys
 import time
+import os
 
-# Setup logging
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')
@@ -56,16 +55,24 @@ class Backend(Base):
 
                 Communicator.show_message("Wait checking for driver...\nIf you don't have webdriver in your machine it will install it")
 
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                    options.add_argument(f"--user-data-dir={tmpdirname}")
-                    logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
+                tmpdirname = tempfile.mkdtemp()
+                options.add_argument(f"--user-data-dir={tmpdirname}")
+                logging.info(f"Using temporary directory for Chrome: {tmpdirname}")
+                
+                if DRIVER_EXECUTABLE_PATH:
+                    self.driver = uc.Chrome(driver_executable_path=DRIVER_EXECUTABLE_PATH, options=options)
+                else:
                     self.driver = uc.Chrome(options=options)
+                    
                 break  # Exit the loop if successful
             except Exception as e:
                 logging.error(f"Attempt {attempt + 1} of 3: Error during Chrome driver initialization: {e}")
                 time.sleep(5)  # Wait before retrying
                 if attempt == 2:
                     raise
+            finally:
+                if tmpdirname and os.path.exists(tmpdirname):
+                    os.rmdir(tmpdirname)
 
         Communicator.show_message("Opening browser...")
         self.driver.maximize_window()

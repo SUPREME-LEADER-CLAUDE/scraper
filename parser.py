@@ -4,8 +4,16 @@ from communicator import Communicator
 from database import DataSaver
 from base import Base
 from common import Common
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname=s - %(message)s')
 
 class Parser(Base):
+
     def __init__(self, driver, searchquery) -> None:
         self.driver = driver
         self.searchquery = searchquery  # Add searchquery to the constructor
@@ -21,14 +29,18 @@ class Parser(Base):
 
     def parse(self):
         """Our function to parse the html"""
-        infoSheet = self.driver.execute_script(
-            """return document.querySelector("[role='main']")"""
-        )
-        if infoSheet is None:
-            Communicator.show_error_message("No information sheet found", ERROR_CODES['ERR_NO_INFO_SHEET'])
-            return
-
         try:
+            # Wait for the main content to be present
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[role='main']"))
+            )
+            infoSheet = self.driver.execute_script(
+                """return document.querySelector("[role='main']")"""
+            )
+            if infoSheet is None:
+                Communicator.show_error_message("No information sheet found", ERROR_CODES['ERR_NO_INFO_SHEET'])
+                return
+
             rating, totalReviews, address, websiteUrl, phone = (None, None, None, None, None)
 
             html = infoSheet.get_attribute("outerHTML")
@@ -92,6 +104,9 @@ class Parser(Base):
                     return
 
                 self.openingurl(url=resultLink)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "[role='main']"))
+                )
                 self.parse()
 
         except Exception as e:
@@ -100,4 +115,3 @@ class Parser(Base):
             self.init_data_saver()
             Communicator.show_message(f"Final data collected: {self.finalData}")
             self.data_saver.save(datalist=self.finalData, query=self.searchquery)  # Pass searchquery to save
-

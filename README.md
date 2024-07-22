@@ -26,7 +26,13 @@ To get started with the scraper, follow these steps:
 
 3. Run the command in root directory:
    ```shell
-   python "scraper\starter.py" headless --search_query "Air Quality Testing" --locations_file "locations.txt" --headless_mode 1
+   python "starter.py" headless --search_query "Air Quality Testing" --locations_file "locations.txt" --headless_mode 1
+
+   OR
+
+   python "starter.py" headless --locations_file "locations.txt" --industries_file "industries.txt" --headless_mode 1
+
+
    ```
 
 

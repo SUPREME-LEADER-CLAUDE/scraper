@@ -13,7 +13,9 @@ import sys
 import time
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname=s - %(message)s')
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def signal_handler(sig, frame):
     logging.info('CTRL+C detected. Shutting down driver...')

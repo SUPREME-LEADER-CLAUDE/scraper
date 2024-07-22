@@ -15,6 +15,7 @@ import subprocess
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 # Global variables
 processes = []
 all_results = []
